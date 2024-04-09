@@ -7,62 +7,103 @@
 #include <stdio.h>
 #include <errno.h>
 #include <sys/time.h>
+#include<sys/select.h>
 #include <signal.h>
-#define BUFFER_SIZE 2000
-int fd;
+#include <json-c/json.h>
 
+#define BUFFER_SIZE 1024
+#define PORT1 4001
+#define PORT2 4002
+#define PORT3 4003
+
+int fd1,fd2,fd3;
+int loop = 1;
 void sig_handler(int signum) {
     printf("\nStop receiving data from server\n");
-    close(fd);
+    close(fd1);
+    close(fd2);
+    close(fd3);
     exit(0);
 }
-int main(){
-    char value[5];
-    char buffer[BUFFER_SIZE];
-    size_t bytes_received;
-    // Initialize the socket 
-    struct sockaddr_in addr;
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(4001);
-    addr.sin_addr.s_addr= inet_addr("0.0.0.0");
-    fd = socket(AF_INET,SOCK_STREAM,0);
-    if(fd < 0){
+int init_socket(int * fd){
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 100000;
+    *fd = socket(AF_INET,SOCK_STREAM,0);
+    if(*fd < 0){
         printf("Error to create socket due to: %s\n",strerror(errno));
-    }
-    //conect socket file address to file descriptor 
-    int connecting = connect(fd,(struct sockaddr * )&addr,sizeof( addr));
-    if (connecting < 0){
-        printf("Error in connect due to: %s\n",strerror(errno));
-        close(fd);
         return 1;
     }
+    setsockopt(*fd,SOL_SOCKET,SO_RCVTIMEO,(const char *) &tv,sizeof(tv));
+    return 0;
+}
+int connect_socket(int fd,int port , char* ip){
+    struct sockaddr_in sock_addr;
+    sock_addr.sin_family = AF_INET;
+    sock_addr.sin_port = htons(port);
+    sock_addr.sin_addr.s_addr= inet_addr(ip);
+    int connecting = connect(fd,(struct sockaddr * )&sock_addr,sizeof( sock_addr));
+    if (connecting < 0){
+        printf("Error in connect  on port %d due to: %s\n",port,strerror(errno));
+        close(fd);
+        return 1;
+    }   
+    return 0;
+}
+
+void get_data(int fd,char * value){
+    char buffer[BUFFER_SIZE];
+    int bytes_received = recv(fd1, buffer, BUFFER_SIZE, 0);
+    if (bytes_received == 0) {
+        loop = 0;
+        printf("Server closed connection\n"); 
+    } else if(bytes_received < 0 ){
+        if (errno == EAGAIN || errno == EWOULDBLOCK) strcpy(value,"--");
+        else printf("Error in receiving data from server");  
+    }else {
+        buffer[bytes_received] ='\0';
+        char * position = strtok(buffer,"\n");
+        while(position != NULL){
+            strncpy(value,position,sizeof(value));
+            position = strtok(NULL,"\n");
+        }
+    }
+    memset(buffer, '\0', sizeof(buffer));
+}
+
+int main(){
+    char output1[5],output2[5],output3[5];
+    char ip[16] = "0.0.0.0";
+    // Initialize the socket 
+    if(init_socket(&fd1) != 0 ||init_socket(&fd2) != 0 || init_socket(&fd3) != 0  ){
+        return 1;
+    }
+    //conect socket file address to file descriptor 
+    if(connect_socket(fd1,PORT1,ip) || connect_socket(fd2,PORT2,ip)|| connect_socket(fd3,PORT3,ip)){
+        return 1;
+    }
+
     //Set interupt signal
     if(signal(SIGINT,sig_handler) == SIG_ERR){
         printf("Error to signal handler due to: %s\n",strerror(errno));
         exit(-1);
     }
-    while((bytes_received = recv(fd, buffer, BUFFER_SIZE, 0))>0) {
-        if (buffer == NULL ) {
-            strcpy(value,"--");       
-        }else {
-            printf("Received: %s", buffer);
-            if(bytes_received <= 5){
-                strcpy(value,buffer);
-                value[bytes_received-1] ='\0';
-            } 
-            else{
-                char * position = strtok(buffer,"\n");
-                while(position != NULL){
-                    strncpy(value,position,sizeof(value));
-                    position = strtok(NULL,"\n");
-                }
-            }
-        }
-        printf("Recent Received: %s\n", value);
-        memset(buffer, '\0', sizeof(buffer));
-        memset(value, '\0', sizeof(value));
-        usleep(100000);
+    //Get data
+    while (loop)
+    {
+        get_data(fd1, output1);
+        get_data(fd2, output2);
+        get_data(fd3, output3);
+        printf("Port 1 :%s, Port2 : %s, Port3 : %s\n", output1, output2, output3);
+
+        memset(output1, '\0', sizeof(output1));
+        memset(output2, '\0', sizeof(output2));
+        memset(output3, '\0', sizeof(output3));
+
     }
-    close(fd);
+
+    close(fd1);
+    close(fd2);
+    close(fd3);
     return 0;
 }
