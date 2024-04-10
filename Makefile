@@ -4,13 +4,12 @@ CLIENT_ONE = client1
 CLIENT_TWO = client2
 OBJECT_NAME_1 = $(CLIENT_ONE).o
 OBJECT_NAME_2 = $(CLIENT_TWO).o
-LDFLAGS = -ljson-c 
 RUN_CODE = $(CC) $(LDFLAGS) -std=$(CC_STANDARD)
 
-all: $(CLIENT_ONE) $(CLIENT_TWO)
+all: $(CLIENT_ONE) 
 	
-run: $(CLIENT)
-	./$(CLIENT)
+run: $(CLIENT_ONE)
+	./$(CLIENT_ONE)
 
 clean:
 	@rm -f $(CLIENT_ONE) $(CLIENT_TWO) *.o && echo "Cleaning successfully" || echo "It's not successfully"
