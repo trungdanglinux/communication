@@ -11,14 +11,22 @@
 #include <signal.h>
 
 #define BUFFER_SIZE 1024
+#define PORT0 4000
 #define PORT1 4001
 #define PORT2 4002
 #define PORT3 4003
+#define TCP 0
+#define UDP 1
+#define READ 1
+#define WRITE 2
+#define OUT1 1
+#define FREQ 255
+#define AMPLI 170
 
-int fd1,fd2,fd3;
+
+int fd0,fd1,fd2,fd3;
 int loop = 1;
-int freq = 2;
-int ampli = 4000;
+char IP[16] = "0.0.0.0";
 void sig_handler(int signum) {
     printf("\nStop receiving data from server\n");
     close(fd1);
@@ -26,19 +34,28 @@ void sig_handler(int signum) {
     close(fd3);
     exit(0);
 }
-int init_socket(int * fd){
+int init_socket(int * fd,int protocol){
     struct timeval tv;
     tv.tv_sec = 0;
     tv.tv_usec = 100000;
-    *fd = socket(AF_INET,SOCK_STREAM,0);
-    if(*fd < 0){
-        printf("Error to create socket due to: %s\n",strerror(errno));
-        return 1;
+    if(protocol == TCP){   
+        *fd = socket(AF_INET,SOCK_STREAM,0);
+        if(*fd < 0){
+            printf("Error to create socket due to: %s\n",strerror(errno));
+            return 1;
+        }
+        setsockopt(*fd,SOL_SOCKET,SO_RCVTIMEO,(const char *) &tv,sizeof(tv));
+    }else if(protocol == UDP){
+        *fd = socket(AF_INET,SOCK_DGRAM,IPPROTO_UDP);
+        if(*fd < 0){
+            printf("Error to create socket due to: %s\n",strerror(errno));
+            return 1;
+        }
     }
-    setsockopt(*fd,SOL_SOCKET,SO_RCVTIMEO,(const char *) &tv,sizeof(tv));
+    
     return 0;
 }
-int connect_socket(int fd,int port , char* ip){
+int connect_socket(int fd,int port , char* ip ){
     struct sockaddr_in sock_addr;
     sock_addr.sin_family = AF_INET;
     sock_addr.sin_port = htons(port);
@@ -52,15 +69,6 @@ int connect_socket(int fd,int port , char* ip){
     return 0;
 }
 
-void set_value(int value){
-    if(value >= 3){
-        freq =1;
-        ampli = 8000;
-    }else{
-        freq =2;
-        ampli = 4000;
-    }
-}
 void get_data(int fd,char * value){
     char buffer[BUFFER_SIZE];
     int bytes_received = recv(fd, buffer, BUFFER_SIZE,0 );
@@ -81,6 +89,40 @@ void get_data(int fd,char * value){
     memset(buffer, '\0', sizeof(buffer));    
 }
 
+void send_control(int fd,int port , char* ip, uint16_t operation, uint16_t object,uint16_t property,uint16_t value){
+    struct sockaddr_in server,client;
+    int len_of_server= sizeof(server);
+    socklen_t client_addr_len = sizeof(client);
+    server.sin_family = AF_INET;
+    server.sin_port = htons(port);
+    server.sin_addr.s_addr = inet_addr(ip);
+    uint16_t  messange[4];
+    messange[0] = htons(operation);
+    messange[1] = htons(object);
+    messange[2] = htons(property);
+    messange[3] = htons(value);
+
+    if (sendto(fd,messange, sizeof(messange), 0, (struct sockaddr *)&server, len_of_server) < 0) {
+        printf("Error in connect  on port %d due to: %s\n",port,strerror(errno));
+        close(fd);
+        exit(1);
+    }
+}
+void set_value(int value){
+    int freq = 0;
+    int ampli = 0;
+    if(value >= 3){
+        freq = 1 * 1000;
+        ampli = 8000;
+        send_control(fd0,PORT0,IP,WRITE,OUT1,FREQ,freq);
+        send_control(fd0,PORT0,IP,WRITE,OUT1,AMPLI,ampli);
+    }else{
+        freq =2 * 1000;
+        ampli = 4000;
+        send_control(fd0,PORT0,IP,WRITE,OUT1,FREQ,freq);
+        send_control(fd0,PORT0,IP,WRITE,OUT1,AMPLI,ampli);
+    }
+}
 void print(int64_t timestamp, char * out1, char *out2, char *out3){
     printf("{\"timestamp\": %lld, \"out1\": \"%s\", \"out2\": \"%s\", \"out3\": \"%s\"}\n",
                              timestamp, out1, out2, out3 );
@@ -94,14 +136,15 @@ int64_t get_timestamp(){
 }
 int main(){
     char output1[5],output2[5],output3[5];
-    char ip[16] = "0.0.0.0";
-
-    // Initialize the socket 
-    if(init_socket(&fd1) != 0 ||init_socket(&fd2) != 0 || init_socket(&fd3) != 0  ){
+    
+   
+    //Initialize the socket tcp and udp
+    if(init_socket(&fd1,TCP) != 0 ||init_socket(&fd2,TCP) != 0 || 
+                                init_socket(&fd3,TCP) != 0 || init_socket(&fd0,UDP) != 0 ){
         return 1;
     }
     //conect socket file address to file descriptor 
-    if(connect_socket(fd1,PORT1,ip) || connect_socket(fd2,PORT2,ip)|| connect_socket(fd3,PORT3,ip)){
+    if(connect_socket(fd1,PORT1,IP) || connect_socket(fd2,PORT2,IP)|| connect_socket(fd3,PORT3,IP)){
         return 1;
     }
 
@@ -121,12 +164,12 @@ int main(){
             set_value(out3);
         }
         usleep(100000);
-        //print(get_timestamp(), output1, output2, output3);
+        print(get_timestamp(), output1, output2, output3);
         memset(output1, '\0', sizeof(output1));
         memset(output2, '\0', sizeof(output2));
         memset(output3, '\0', sizeof(output3));
     }
-
+    close(fd0);
     close(fd1);
     close(fd2);
     close(fd3);
