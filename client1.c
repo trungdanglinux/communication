@@ -1,3 +1,4 @@
+#define _XOPEN_SOURCE 500
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -10,7 +11,7 @@
 #include<sys/select.h>
 #include <signal.h>
 #include <json-c/json.h>
-
+#include <time.h>
 #define BUFFER_SIZE 1024
 #define PORT1 4001
 #define PORT2 4002
@@ -53,7 +54,7 @@ int connect_socket(int fd,int port , char* ip){
 
 void get_data(int fd,char * value){
     char buffer[BUFFER_SIZE];
-    int bytes_received = recv(fd1, buffer, BUFFER_SIZE, 0);
+    int bytes_received = recv(fd, buffer, BUFFER_SIZE,0 );
     if (bytes_received == 0) {
         loop = 0;
         printf("Server closed connection\n"); 
@@ -71,9 +72,30 @@ void get_data(int fd,char * value){
     memset(buffer, '\0', sizeof(buffer));
 }
 
+void print(int64_t timestamp, char * out1, char *out2, char *out3){
+    json_object *obj = json_object_new_object();
+    json_object_object_add(obj, "timestamp", json_object_new_int64(timestamp));
+    json_object_object_add(obj, "out1", json_object_new_string(out1));
+    json_object_object_add(obj, "out2", json_object_new_string(out2));
+    json_object_object_add(obj, "out3", json_object_new_string(out3));
+    printf("%s\n", json_object_to_json_string(obj));
+}
+int64_t get_timestamp(){
+    struct timeval measure;
+    int64_t  timestamp;
+    gettimeofday(&measure, NULL);
+    timestamp = (int64_t)measure.tv_sec * 1000LL + (int64_t)measure.tv_usec / 1000LL;
+    return timestamp;
+}
 int main(){
     char output1[5],output2[5],output3[5];
     char ip[16] = "0.0.0.0";
+  
+
+    struct timespec ts;
+    ts.tv_sec =0;
+    ts.tv_nsec = 100000000;
+
     // Initialize the socket 
     if(init_socket(&fd1) != 0 ||init_socket(&fd2) != 0 || init_socket(&fd3) != 0  ){
         return 1;
@@ -94,12 +116,11 @@ int main(){
         get_data(fd1, output1);
         get_data(fd2, output2);
         get_data(fd3, output3);
-        printf("Port 1 :%s, Port2 : %s, Port3 : %s\n", output1, output2, output3);
-
+        usleep(100000);
+        print(get_timestamp(), output1, output2, output3);
         memset(output1, '\0', sizeof(output1));
         memset(output2, '\0', sizeof(output2));
         memset(output3, '\0', sizeof(output3));
-
     }
 
     close(fd1);
