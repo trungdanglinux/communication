@@ -8,9 +8,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <sys/time.h>
-#include<sys/select.h>
 #include <signal.h>
-#include <json-c/json.h>
 #include <time.h>
 #define BUFFER_SIZE 1024
 #define PORT1 4001
@@ -58,7 +56,7 @@ void get_data(int fd,char * value){
     if (bytes_received == 0) {
         loop = 0;
         printf("Server closed connection\n"); 
-    } else if(bytes_received < 0 ){
+    } else if (bytes_received < 0 ){
         if (errno == EAGAIN || errno == EWOULDBLOCK) strcpy(value,"--");
         else printf("Error in receiving data from server");  
     }else {
@@ -69,16 +67,21 @@ void get_data(int fd,char * value){
             position = strtok(NULL,"\n");
         }
     }
-    memset(buffer, '\0', sizeof(buffer));
+    memset(buffer, '\0', sizeof(buffer));    
 }
 
 void print(int64_t timestamp, char * out1, char *out2, char *out3){
-    json_object *obj = json_object_new_object();
-    json_object_object_add(obj, "timestamp", json_object_new_int64(timestamp));
-    json_object_object_add(obj, "out1", json_object_new_string(out1));
-    json_object_object_add(obj, "out2", json_object_new_string(out2));
-    json_object_object_add(obj, "out3", json_object_new_string(out3));
-    printf("%s\n", json_object_to_json_string(obj));
+    // THIS IS FROM THIRD-PARTY LIBRARY, NOT C STANDARD LIBRARY 
+    // json_object *obj = json_object_new_object();
+    // json_object_object_add(obj, "timestamp", json_object_new_int64(timestamp));
+    // json_object_object_add(obj, "out1", json_object_new_string(out1));
+    // json_object_object_add(obj, "out2", json_object_new_string(out2));
+    // json_object_object_add(obj, "out3", json_object_new_string(out3));
+    
+    //Packing data
+    printf("{\"timestamp\":%lld,\"out1\":\"%s\",\"out2\":\"%s\",\"out3\":\"%s\"}\n",
+                             timestamp, out1, out2, out3 );
+
 }
 int64_t get_timestamp(){
     struct timeval measure;
@@ -116,13 +119,12 @@ int main(){
         get_data(fd1, output1);
         get_data(fd2, output2);
         get_data(fd3, output3);
-        usleep(100000);
         print(get_timestamp(), output1, output2, output3);
+        usleep(100000);
         memset(output1, '\0', sizeof(output1));
         memset(output2, '\0', sizeof(output2));
         memset(output3, '\0', sizeof(output3));
     }
-
     close(fd1);
     close(fd2);
     close(fd3);
