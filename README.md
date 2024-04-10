@@ -1,1 +1,6 @@
-# communication
+# Communication between Server and Client
+## Receiving the data from server
+Data is received and observed in client side with delay 100 milliseconds and also timeout for 100 millisends when data is not received. There are three TCP ports:
+- Port 4001, there is a sequence of data received from server with high freqency.For 100-millisecond interval, there are many strings received and its values fluctuate from -5.0 to 5.0. The transition goes smoothly between peaks and troughs so peak-to-peak amplitude is from -5.0 to 5.0. The shape could be a sine wave signal.
+- Port 4002, the data value is also from -5.0 to 5.0 like a port 4001 but with lower frequency. IN 100-millisecond interval, one data is received and sometimes no data is received from server. Peak-to-peak amplitude is also from -5.0 to 5.0 but the transition is sharp. It rises linearly from -5.0 to 5.0 then fall righ way linearly to -5.0. Therefore, the shape is triangular wave. 
+- Port 4003, the frequency is low. There is data received every 200-milliseconds interval. The  amplitude of this signal is from 0.0 to 5.0 and there are only two value 0.0 and 5.0. The data changes instantly from 0.0 to 5.0 resulting in square pulses. The shape is square wave. 
