@@ -37,7 +37,7 @@ void sig_handler(int signum) {
 int init_socket(int * fd,int protocol){
     struct timeval tv;
     tv.tv_sec = 0;
-    tv.tv_usec = 20000;
+    tv.tv_usec = 100000;
     if(protocol == TCP){   
         *fd = socket(AF_INET,SOCK_STREAM,0);
         if(*fd < 0){
@@ -70,7 +70,7 @@ int connect_socket(int fd,int port , char* ip ){
 
 void get_data(int fd,char * value){
     char buffer[BUFFER_SIZE];
-    int bytes_received = recv(fd, buffer, BUFFER_SIZE,0 );
+    int bytes_received = recv(fd, buffer, BUFFER_SIZE,MSG_DONTWAIT );
     if (bytes_received == 0) {
         loop = 0;
         printf("Server closed connection\n"); 
