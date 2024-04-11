@@ -20,8 +20,8 @@
 #define READ 1
 #define WRITE 2
 #define OUT1 1
-#define FREQ 255
-#define AMPLI 170
+#define FREQ 255 // frequency property in server
+#define AMPLI 170 // amplitude property in server
 
 
 int fd0,fd1,fd2,fd3;
@@ -96,12 +96,12 @@ void send_control(int fd,int port , char* ip, uint16_t operation, uint16_t objec
     server.sin_family = AF_INET;
     server.sin_port = htons(port);
     server.sin_addr.s_addr = inet_addr(ip);
+    //Pack data in MSB order
     uint16_t  messange[4];
     messange[0] = htons(operation);
     messange[1] = htons(object);
     messange[2] = htons(property);
     messange[3] = htons(value);
-
     if (sendto(fd,messange, sizeof(messange), 0, (struct sockaddr *)&server, len_of_server) < 0) {
         printf("Error in connect  on port %d due to: %s\n",port,strerror(errno));
         close(fd);
@@ -109,15 +109,15 @@ void send_control(int fd,int port , char* ip, uint16_t operation, uint16_t objec
     }
 }
 void set_value(int value){
-    int freq = 0;
-    int ampli = 0;
+    uint16_t freq = 0;
+    uint16_t ampli = 0;
     if(value >= 3){
-        freq = 1 * 1000;
+        freq = ntohs(1); // value from 50 - 2000
         ampli = 8000;
         send_control(fd0,PORT0,IP,WRITE,OUT1,FREQ,freq);
         send_control(fd0,PORT0,IP,WRITE,OUT1,AMPLI,ampli);
     }else{
-        freq =2 * 1000;
+        freq =ntohs(2);
         ampli = 4000;
         send_control(fd0,PORT0,IP,WRITE,OUT1,FREQ,freq);
         send_control(fd0,PORT0,IP,WRITE,OUT1,AMPLI,ampli);
@@ -137,13 +137,12 @@ int64_t get_timestamp(){
 int main(){
     char output1[5],output2[5],output3[5];
     
-   
     //Initialize the socket tcp and udp
     if(init_socket(&fd1,TCP) != 0 ||init_socket(&fd2,TCP) != 0 || 
                                 init_socket(&fd3,TCP) != 0 || init_socket(&fd0,UDP) != 0 ){
         return 1;
     }
-    //conect socket file address to file descriptor 
+    //conect socket file to server 
     if(connect_socket(fd1,PORT1,IP) || connect_socket(fd2,PORT2,IP)|| connect_socket(fd3,PORT3,IP)){
         return 1;
     }
@@ -156,15 +155,16 @@ int main(){
     //Get data
     while (loop)
     {
+        usleep(20000);
         get_data(fd1, output1);
         get_data(fd2, output2);
         get_data(fd3, output3);
+        print(get_timestamp(), output1, output2, output3);
+        //ignore the "--" value 
         if (strcmp(output3,"--") != 0 ) {
             int out3 = atoi(output3);
             set_value(out3);
-        }
-        usleep(100000);
-        print(get_timestamp(), output1, output2, output3);
+        } 
         memset(output1, '\0', sizeof(output1));
         memset(output2, '\0', sizeof(output2));
         memset(output3, '\0', sizeof(output3));
