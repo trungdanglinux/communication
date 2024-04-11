@@ -9,7 +9,7 @@
 #include <errno.h>
 #include <sys/time.h>
 #include <signal.h>
-#include <time.h>
+
 #define BUFFER_SIZE 1024
 #define PORT1 4001
 #define PORT2 4002
@@ -52,7 +52,7 @@ int connect_socket(int fd,int port , char* ip){
 
 void get_data(int fd,char * value){
     char buffer[BUFFER_SIZE];
-    int bytes_received = recv(fd, buffer, BUFFER_SIZE,0 );
+    int bytes_received = recv(fd, buffer, BUFFER_SIZE, 0);
     if (bytes_received == 0) {
         loop = 0;
         printf("Server closed connection\n"); 
@@ -66,8 +66,8 @@ void get_data(int fd,char * value){
             strncpy(value,position,sizeof(value));
             position = strtok(NULL,"\n");
         }
-    }
-    memset(buffer, '\0', sizeof(buffer));    
+    } 
+    memset(buffer, '\0', sizeof(buffer));
 }
 
 void print(int64_t timestamp, char * out1, char *out2, char *out3){
@@ -79,7 +79,7 @@ void print(int64_t timestamp, char * out1, char *out2, char *out3){
     // json_object_object_add(obj, "out3", json_object_new_string(out3));
     
     //Packing data
-    printf("{\"timestamp\":%lld,\"out1\":\"%s\",\"out2\":\"%s\",\"out3\":\"%s\"}\n",
+    printf("{\"timestamp\": %lld, \"out1\": \"%s\", \"out2\": \"%s\", \"out3\": \"%s\"}\n",
                              timestamp, out1, out2, out3 );
 
 }
@@ -93,17 +93,12 @@ int64_t get_timestamp(){
 int main(){
     char output1[5],output2[5],output3[5];
     char ip[16] = "0.0.0.0";
-  
-
-    struct timespec ts;
-    ts.tv_sec =0;
-    ts.tv_nsec = 100000000;
 
     // Initialize the socket 
     if(init_socket(&fd1) != 0 ||init_socket(&fd2) != 0 || init_socket(&fd3) != 0  ){
         return 1;
     }
-    //conect socket file address to file descriptor 
+    //conect socket file to server 
     if(connect_socket(fd1,PORT1,ip) || connect_socket(fd2,PORT2,ip)|| connect_socket(fd3,PORT3,ip)){
         return 1;
     }
@@ -116,11 +111,12 @@ int main(){
     //Get data
     while (loop)
     {
+        usleep(100000);
+        int64_t timeStamp = get_timestamp();
         get_data(fd1, output1);
         get_data(fd2, output2);
         get_data(fd3, output3);
-        print(get_timestamp(), output1, output2, output3);
-        usleep(100000);
+        print(timeStamp, output1, output2, output3);
         memset(output1, '\0', sizeof(output1));
         memset(output2, '\0', sizeof(output2));
         memset(output3, '\0', sizeof(output3));
