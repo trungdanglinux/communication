@@ -32,8 +32,17 @@ To make it comfortable to stop the program sufficiently, the signal is set to ge
 ```c
 signal(SIGINT,sig_handler);
 ```
+For get_data(int fd,char * value) function, it is possible to create a dynamic memory allocation for reading value from buffer and buffer has enough size for the data. FIONREAD request in ioctl(), I/O device control function  is used to do this purpose.  However, array with fixed size still works well because the data has under 100 bytes for 100 milliseconds and its memory will be deallocated and array will crease after function completes its execution.
 
+```c
+ int bytes =0; 
+ioctl(fd,FIONREAD,&bytes);
+char * buffer =(char *) malloc(bytes);
+int bytes_received = recv(fd, buffer, bytes, MSG_DONTWAIT);
 
+// free after usage
+ free(buffer);
+```
 To make sure it works well, every port will be tested and the data is received properly. All the data will be printed from the buffer first and then the value handled with timeout and with most recent data will be shown also. It is easy to make comparison that data is matched and meets the requirements 
 
 ### Client 2

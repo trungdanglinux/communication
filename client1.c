@@ -9,7 +9,7 @@
 #include <errno.h>
 #include <sys/time.h>
 #include <signal.h>
-
+#include <sys/ioctl.h> 
 #define BUFFER_SIZE 1024
 #define PORT1 4001
 #define PORT2 4002
@@ -51,8 +51,15 @@ int connect_socket(int fd,int port , char* ip){
 }
 
 void get_data(int fd,char * value){
+    // For dynamic memory allocation 
+    // int bytes =0; 
+    // ioctl(fd,FIONREAD,&bytes);
+    // char * buffer =(char *) malloc(bytes);
+    // int bytes_received = recv(fd, buffer, bytes, MSG_DONTWAIT);
+
     char buffer[BUFFER_SIZE];
     int bytes_received = recv(fd, buffer, BUFFER_SIZE, MSG_DONTWAIT);
+
     if (bytes_received == 0) {
         loop = 0;
         printf("Server closed connection\n"); 
@@ -68,6 +75,7 @@ void get_data(int fd,char * value){
         }
     } 
     memset(buffer, '\0', sizeof(buffer));
+    // free(buffer);
 }
 
 void print(int64_t timestamp, char * out1, char *out2, char *out3){
