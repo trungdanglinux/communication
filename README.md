@@ -32,7 +32,7 @@ To make it comfortable to stop the program sufficiently, the signal is set to ge
 ```c
 signal(SIGINT,sig_handler);
 ```
-For get_data(int fd,char * value) function, it is possible to create a dynamic memory allocation for reading value from buffer and buffer has enough size for the data. FIONREAD request in ioctl(), I/O device control function  is used to do this purpose.  However, array with fixed size still works well because the data has under 100 bytes for 100 milliseconds and its memory will be deallocated and array will crease after function completes its execution.
+For get_data(int fd,char * value) function, it is possible to create a dynamic memory allocation for reading value from buffer and buffer has enough size for the data. FIONREAD request in ioctl(), I/O device control function is used to do this purpose.  However, array with fixed size still works well because the data has under 100 bytes for 100 milliseconds and its memory will be deallocated and array will crease after function completes its execution.
 
 ```c
  int bytes =0; 
@@ -43,11 +43,11 @@ int bytes_received = recv(fd, buffer, bytes, MSG_DONTWAIT);
 // free after usage
  free(buffer);
 ```
-To make sure it works well, every port will be tested and the data is received properly. All the data will be printed from the buffer first and then the value handled with timeout and with most recent data will be shown also. It is easy to make comparison that data is matched and meets the requirements 
+To make sure it works well, every port will be tested and the data is received properly. All the data will be printed from the buffer first and then the value handled with timeout and with most recent data will be shown also. It is easy to make comparison that data is matched and meets the requirements.
 
 ### Client 2
-Only the valid values from out3 are handled and "--" is ignored. To control the property in server, the control protocol is useful to handle. First of all, every field is set with unsigned 16-bit integer in an array so server can read data as the whole protocol and it is also converted to network byte order(Big-Endian). 
-Next, **Read Operation** is used to read data in server but there is no information about frequency and amplitude properties provided but object could be 1,2,3 from port1, port2 and port3. It is good to test read operations with some random numbers for properties increasing in the loop and monitor at standard output of server side at the same time. 
+Only the valid values from out3 are handled and "--" is ignored. To control the property in the server, the control protocol is useful. First of all, every field is set with unsigned 16-bit integer in an array so the server can read data as the whole protocol and it is also converted to network byte order(Big-Endian). 
+Next, **Read Operation** is used to read data in the server but there is no information about frequency and amplitude properties provided but the object could be 1,2,3 from port1, port2, and port3. It is good to test read operations with some random numbers for properties increasing in the loop and monitor the standard output of the server side at the same time. 
 
 ```c    
     uint16_t  messange[3];
@@ -72,7 +72,7 @@ Client connected
 1.256: no such property
 ...
 ```
-After getting information of properties then **WRITE operation** can be used. However, the frequency value 1 or 2 is not the in the range from 50 to 2000 in the server.
+After getting information on properties, the **WRITE operation** can be used. However, the frequency value 1 or 2 is not in the range from 50 to 2000 in the server.
 ```c 
 uint16_t  messange[4];
 messange[0] = htons(WRITE);
@@ -85,7 +85,7 @@ messange[3] = htons(1);
 error,Value out of range, 1 not in [50, 2000]
 ...
 ```
-After taking consiration of this value, there is an **assumption** that value does **not need** to be in the network byte order(Big-Endian). In the server, value 1 or 2 will be 256 or 512 and it is near to default value 500 in output1 and it is still in the range from 50 to 2000. Moreover, frequency value is 500 in output1 and 250 in output2 so there is **another assumption** that **value 1 of frequency = 250 and value 2 of frequency = 500**. 
+After taking consideration of this value, there is an **assumption** that the value does **not need** to be in the network byte order(Big-Endian). In the server, value 1 or 2 will be 256 or 512 and it is near to the default value 500 in output1 and it is still in the range from 50 to 2000. Moreover, the frequency value is 500 in output1 and 250 in output2 so there is **another assumption** that **value 1 of frequency = 250 and value 2 of frequency = 500**. 
 
 
 ```bash
@@ -111,7 +111,7 @@ ok,amplitude=8000
 
 ### Build and Run
 Makefile is used to compile the code. By default, it will compile and build both client1 and client2 if there is no argument in the make command. 
-Moreover, to be more convient, run and clean commands are added to run the executable file and clean the both objects and executable files. For run, client1 or client2 should be added as argument to CLIENT.
+Moreover, to be more convenient, run and clean commands are added to run the executable file and clean both objects and executable files. For run command, client1 or client2 should be added as an argument to CLIENT.
 
 ```bash
 make // build client1 and client2
@@ -124,5 +124,5 @@ make run CLIENT=client2
 make clean
 ```
 
-## Conculsion
-This is a very interesting task, there is combination of many things such as UPD and TCP protocol programming but aslo how to solve problems from many different points. This is also very practical. Hopefully there will more similar tasks in the future. 
+## Conclusion
+This is an interesting task, there is a combination of many things such as UPD and TCP protocol programming, and also how to solve problems from many different points. This is also very practical. Hopefully, there will be more similar tasks in the future. 
