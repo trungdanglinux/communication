@@ -76,7 +76,8 @@ messange[3] = htons(1);
 error,Value out of range, 1 not in [50, 2000]
 ...
 ```
-After taking consiration of this value, there is an **assumption** that value does **not need** to be in the network byte order(Big-Endian). In the server, value 1 or 2 will be 256 or 512 and it is near to default value 500 and it is still in the range from 50 to 2000.
+After taking consiration of this value, there is an **assumption** that value does **not need** to be in the network byte order(Big-Endian). In the server, value 1 or 2 will be 256 or 512 and it is near to default value 500 in output1 and it is still in the range from 50 to 2000. Moreover, frequency value is 500 in output1 and 250 in output2 so there is **another assumption** that **value 1 of frequency = 250 and value 2 of frequency = 500**. 
+
 
 ```bash
 ...
@@ -87,6 +88,18 @@ ok,frequency=512
 ok,amplitude=4000
 ...
 ```
+or 
+
+```bash
+...
+ok,frequency=500
+ok,amplitude=4000
+ok,frequency=250
+ok,amplitude=8000
+...
+```
+
+
 ### Build and Run
 Makefile is used to compile the code. By default, it will compile and build both client1 and client2 if there is no argument in the make command. 
 Moreover, to be more convient, run and clean commands are added to run the executable file and clean the both objects and executable files. For run, client1 or client2 should be added as argument to CLIENT.

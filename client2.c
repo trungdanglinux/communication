@@ -111,12 +111,15 @@ void set_value(int value){
     uint16_t freq = 0;
     uint16_t ampli = 0;
     if(value >= 3){
-        freq = ntohs(1); // value from 50 - 2000
+        // There are two assumptions for frequency value
+        // freq = ntohs(1); // value from 50 - 2000
+        freq = 250;
         ampli = 8000;
         send_control(fd0,PORT0,IP,WRITE,OUT1,FREQ,freq);
         send_control(fd0,PORT0,IP,WRITE,OUT1,AMPLI,ampli);
     }else{
-        freq =ntohs(2);
+        // freq =ntohs(2);
+        freq = 500;
         ampli = 4000;
         send_control(fd0,PORT0,IP,WRITE,OUT1,FREQ,freq);
         send_control(fd0,PORT0,IP,WRITE,OUT1,AMPLI,ampli);
@@ -159,7 +162,7 @@ int main(){
         get_data(fd1, output1);
         get_data(fd2, output2);
         get_data(fd3, output3);
-        //ignore the "--" value 
+       // ignore the "--" value 
         if (strcmp(output3,"--") != 0 ) {
             int out3 = atoi(output3);
             set_value(out3);
